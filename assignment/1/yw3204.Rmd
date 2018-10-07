@@ -1,0 +1,86 @@
+---
+title: "assinment1"
+author: 'Yuhao Wang(UNI: yw3204)'
+date: "9/15/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part 1
+
+### i
+```{r}
+titanic <- read.table("Titanic.txt", header = TRUE, as.is = TRUE)
+```
+
+### ii
+```{r}
+nrow(titanic)
+ncol(titanic)
+```
+
+### iii
+```{r}
+titanic$Survivor.Word <- "survived"
+ind = titanic$Survived == 0
+titanic[ind, ]$Survivor.Word <- "died"
+head(titanic$Survivor.Word)
+head(titanic$Survived)
+```
+
+
+
+## Part 2
+
+### i
+```{r}
+apply(titanic[, c("Survived", "Age", "Fare")], 2, mean)
+```
+The mean of Survived tells us the percentage of people survived. Age has a mean value of NA because some value in age are NA.
+
+### ii
+```{r}
+ind1 = titanic$Sex == "female"
+p1 = sum(titanic[ind1, ]$Survived == 1) / nrow(titanic)
+round(p1, 2)
+```
+The proportion is 0.26.
+
+### iii
+```{r}
+ind2 = titanic$Survived == 1
+p2 = sum(titanic[ind2, ]$Sex == "female") / nrow(titanic[ind2, ])
+round(p2, 2)
+```
+The proportion is 0.68. 
+
+### iv
+```{r}
+classes <- sort(unique(titanic$Pclass))
+Pclass.Survival <- vector("numeric", length = 3)
+names(Pclass.Survival) <- classes
+
+for (i in 1:3) {
+    ind_temp = titanic$Pclass == i
+    p_temp = sum(titanic[ind_temp, ]$Survived == 1) / nrow(titanic[ind_temp, ])
+    Pclass.Survival[i] = round(p_temp, 2)
+}
+
+Pclass.Survival
+```
+
+### v
+```{r}
+Pclass.Survival2 <- vector("numeric", length = 3)
+names(Pclass.Survival2) <- classes
+Pclass.Survival2 <- tapply(titanic$Survived, titanic$Pclass, mean)
+round(Pclass.Survival2, 2)
+```
+
+### vi
+Yes, the more advanced the Pcalss, the higher the survival rate.

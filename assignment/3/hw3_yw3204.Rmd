@@ -1,0 +1,123 @@
+---
+title: "hw3_yw3204"
+author: "wyh"
+date: "10/3/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## i)
+
+## ii)
+```{r}
+# read html file
+nets1819 <- readLines("NetsSchedule1819.html", warn = FALSE)
+
+# total lines
+length(nets1819)
+
+# total characters
+sum(nchar(nets1819))
+
+# maxmimum # of characters in a single line
+max(nchar(nets1819))
+```
+
+## iii)
+They were playing with Detroit first on Wed, Oct 17 and playing with Miami last on Wed, Apr 10.
+
+## iv)
+Line 64.
+
+## v)
+```{r}
+s64 <- nets1819[64]
+
+# define starting regexp pattren
+p_0 <- "\\[\\{\"date\":"
+
+# define ending regexp pattern
+p_1 <- "\"notes\":\\{\\}\\}\\]"
+
+# find positions
+gregexpr(p_0, s64)
+gregexpr(p_1, s64)
+
+# extract
+s <- substr(s64, 99751, 198684)
+```
+
+## vi)
+```{r}
+# split into 82 substrings and unlist list
+s_1 <- strsplit(s, split = "\\},\\{")
+s_1 <- unlist(s_1)
+```
+
+## vii)
+```{r}
+# define date regexp pattern
+p_2 <- "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+grep(p_2, s_1)
+
+grep("Detroit", s_1)
+grep("Miami", s_1)
+```
+Yes, we have found 82 lines and the locations of the first and last games match with that in (ii).
+
+## viii)
+```{r}
+# definedate pattern
+p_4 <- "[A-z]+,\\s[A-z]*\\s[0-9]+(th|st|nd|rd)"
+# grepl(p_4, s_1)
+date <- regmatches(s_1, gregexpr(p_4, s_1))
+date <- unlist(date)
+```
+
+## ix)
+```{r}
+# define time pattern
+p_5 <- "[0-9]+:[0-9]+\\sPM\\s(EDT|EST)"
+# grepl(p_5, s_1)
+time <- regmatches(s_1, regexpr(p_5, s_1))
+time <- unlist(time)
+```
+
+## x)
+```{r}
+# define home or away pattern
+p_6 <- "\"homeAwaySymbol\":\"(@|vs)\""
+# grepl(p_6, s_1)
+home <- regmatches(s_1, regexpr(p_6, s_1))
+home <- unlist(home)
+home <- substr(home, 19, nchar(home)-1)
+```
+
+## xi)
+```{r}
+# define opponent pattern
+p_7 <- "\"displayName\":\"[A-z0-9\\ ]+\""
+# grepl(p_7, s_1)
+opponent <- regmatches(s_1, regexpr(p_7, s_1))
+opponent <- unlist(opponent)
+opponent <- substr(opponent, 16, nchar(opponent)-1)
+```
+
+## xii)
+```{r}
+# create data frame based on the info we extrcted
+nets_df <- data.frame(date, time, opponent, home)
+head(nets_df, 10)
+```
+Yes, it matches.
+
+
+
+
+
+
+
+
