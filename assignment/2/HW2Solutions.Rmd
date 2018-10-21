@@ -1,0 +1,117 @@
+---
+title: "Homework 2 Solutions"
+output:
+  pdf_document: default
+  html_document: default
+date: "October 11, 2018"
+---
+
+# Part 1
+
+i. Since *NYChousing* is a *.csv* file I use *read.csv()* to import the data into R.
+
+```{r}
+setwd("~/Desktop/Data")
+housing <- read.csv("NYChousing.csv", as.is = TRUE)
+```
+
+ii. The function *dim()* provides the dimension of its input object.
+```{r}
+orig_dim <- dim(housing)
+orig_dim
+```
+
+iii.
+```{r}
+apply(is.na(housing), 2, sum)
+```
+
+The command *is.na(housing)* creates a matrix of the same dimensions as *housing* with each element being TRUE or FALSE depending on whether or not the corresponding element in *housing* is an NA value.  Then the full call *apply(is.na(housing), 2, sum)* counts the number of NA values each column of *housing*.
+
+iv.
+```{r}
+housing <- housing[!is.na(housing$Value), ]
+```
+
+The call **is.na(housing\$Value)** returns a logical vector with TRUE where **housing\$Value** is **NA**, therefore I filter using **!is.na(housing\$Value)** to get only the rows where **Value** is not **NA**.  I reassign my **housing** dataframe, to be the filtered dataframe. 
+
+v.
+```{r}
+new_dim <- dim(housing)
+orig_dim[1] - new_dim[1]
+```
+
+I removed 52 rows of my dataframe which is what I expect, since my ouput in (iii) told me that I have 52 missing values in **Value**.
+
+v.
+```{r}
+housing$logValue <- log(housing$Value)
+summary(housing$logValue)
+```
+
+vi.
+```{r}
+housing$logUnits <- log(housing$UnitCount)
+```
+
+
+vii.
+```{r}
+housing$after1950 <- housing$YearBuilt >= 1950
+```
+
+
+# Part 2: EDA
+
+
+i.
+```{r}
+plot(housing$logUnits, housing$logValue, xlab = "log(Units)", ylab = "Log(Value)")
+```
+
+I plot a scatterplot with the **plot()** command and add argument **xlab = ** and **ylab = ** for the labels.
+
+ii.
+```{r}
+plot(housing$logUnits, housing$logValue, col = factor(housing$after1950), xlab = "log(Units)", ylab = "Log(Value)")
+legend("bottomright", legend = levels(factor(housing$after1950)), fill = unique(factor(housing$after1950)))
+```
+
+There appears to be a pretty strong linear reltionship between **logValue** and **logUnits**.  When colored according to the **after1950** variable, it is clear that newer buildings (those built after 1950) tend to be more expensive and have more units than older buildings.
+
+iii.
+
+```{r}
+cor(housing$logValue, housing$logUnits)
+cor(housing$logValue[housing$Borough == "Manhattan"], housing$logUnits[housing$Borough == "Manhattan"])
+cor(housing$logValue[housing$Borough == "Brooklyn"], housing$logUnits[housing$Borough == "Brooklyn"])
+cor(housing$logValue[housing$after1950], housing$logUnits[housing$after1950])
+cor(housing$logValue[!housing$after1950], housing$logUnits[!housing$after1950])
+```
+
+iv.
+```{r}
+plot(housing$logUnits[housing$Borough == "Manhattan"], housing$logValue[housing$Borough == "Manhattan"], xlab = "log(Units)", ylab = "Log(Value)")
+points(housing$logUnits[housing$Borough == "Brooklyn"], housing$logValue[housing$Borough == "Brooklyn"], col = "red", pch = "+")
+legend("bottomright", legend = c("Manhattan", "Brooklyn"), fill = c("black", "red"))
+```
+
+v.
+```{r}
+median(housing$Value[housing$Borough == "Manhattan"])
+```
+
+The code calculates the median property value for all properties in Manhattan.
+
+vi.
+```{r}
+boxplot(housing$logValue ~ housing$Borough)
+```
+
+vii.
+```{r}
+tapply(housing$Value, housing$Borough, median)
+```
+
+We use **tapply()** which splits the property value into groups based on **Borough** and then calculated the median within each group.
+

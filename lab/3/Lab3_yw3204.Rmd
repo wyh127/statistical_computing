@@ -1,0 +1,99 @@
+---
+title: "Lab 3"  
+author: "Yuhao Wang, yw3204"
+date: "October 7, 2018"
+output: pdf_document
+---
+
+# Instructions 
+Make sure that you upload the PDF or HTML output after you have knitted the Rmd file.  The file you upload to the Canvas page should be updated with commands you provide to answer each of the questions below.  You can edit this file directly to produce your final solutions.      
+
+# Optimization
+
+
+The goal of this lab is to write a simple optimization function in **R** which estimates the global minimum of a convex differentiable function $f(x)$.  Specifically, consider the function 
+$$f(x)=\frac{-\log(x)}{1+x}, \ \ x>0,$$
+where $\log(x)$ is the natural logarithm of $x$.  We seek to estimate the value of $x>0$ such that $f(x)$ achieves its global minimum.  For example, the global minimum of the function $g(x)=x^2-4x+3$ is at $x=2$. The minimum of $g(x)$ can easily be computed using the vertex formula for quadratic functions, i.e., $x=-b/(2a)=4/(2*1)=2$.  In most cases, the minimum does not have a closed form solution and must be computed numerically.  Hence we seek to estimate the global minimum of $f(x)$ numerically via gradient descent.    
+
+# Tasks
+
+1) Using **R**, define the function $$f(x)=\frac{-\log(x)}{1+x}, \ \ x>0.$$ Test the points $f(0)$ and $f(2)$.  
+```{r}
+f <- function(x) {
+  return (-log(x)/(x+1))
+}
+f(0)
+f(2)
+```
+The calculation are provided above.
+
+2) Plot the function $f(x)$ over the interval $(0,6]$. 
+```{r}
+library(ggplot2)
+base <- ggplot(data = data.frame(x = c(0, 6)), aes(x))
+base + stat_function(fun = f) 
+```
+
+3)  By inspection, were do you think global minimum is located at?  
+Somewhere around 4.
+
+4) Define a **R** function which computes the difference quotient of $f(x)$, i.e., for $h>0$, 
+$$\frac{f(x+h)-f(x)}{h}.$$ This function should have two inputs; $h$ and $x$.  Name the difference quotient function **diff.quot**.  Note that for small $h$,  this function is the approximate derivative of $f(x)$.    
+```{r}
+diff.quot <- function(x, h=0.0001) {
+  return ((f(x+h)-f(x))/h)
+}
+```
+
+5) Plot both the difference quotient function **diff.quot** and $f(x)$ over the interval $(0,6]$.  Fix $h=.0001$ to construct this plot.  Comment on any interesting features.
+```{r}
+base + stat_function(fun = f) + stat_function(fun = diff.quot) 
+```
+It is interesting that the two functions intersects around point x = 1.5. And they have different monotonity.
+
+
+6) Write a **R** function named **basic.grad.descent** that runs the basic gradient descent algorithm on the function $f(x)$.
+The function should have inputs:  
+
+\begin{enumerate}
+\item Initial value  {\bf x}
+\item Maximum iterations  {\bf max.iter} with default 10000. 
+\item Stopping criterion {\bf stop.deriv} with default 1e-10. 
+\item Derivative step size {\bf h} with default .0001.  
+\item Step size {\bf step.scale} with default .5. 
+\end{enumerate} The function should have outputs:
+\begin{enumerate}
+\item The value $x$ that yields the minimum of $f(x)$. 
+\item The minimum value of $f(x)$. 
+\item The number of iterations the algorithm took to reach the minimum.
+\item A logical indicator displaying whether or not the algorithm converged.  
+\end{enumerate}
+
+```{r}
+basic.grad.descent <- function(x, max.iter = 10000, stop.deriv = 1e-10, h = .0001, step.scale = .5) {
+  iter = 0
+  prime = Inf
+  x_init = x
+  
+  while((abs(prime) > stop.deriv) & (iter < max.iter)) {
+    prime = diff.quot(x_init, h)
+    x_init = x_init - step.scale * prime
+    iter = iter + 1
+  }
+  
+  res = list(x_res = x_init, f_res = f(x_init), iter_res = iter, conv = (iter < max.iter))
+  
+  return (res)
+}
+
+basic.grad.descent(1)
+```
+
+
+7)  Check the optimal value using the base **R** function **nlm()**.  
+```{r}
+nlm(f, 1)
+```
+Obviously, the result matches with that in 6) except the iterations.
+
+

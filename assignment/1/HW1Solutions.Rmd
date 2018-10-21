@@ -1,0 +1,86 @@
+---
+title: "Homework 1 Solutions"
+#author: "Gabriel Young (gjy2107)"
+#date: "Febuary, 8th 2018"  
+output: pdf_document
+---
+
+# Part 1
+
+i. Looking at *Titanic.txt* I see that the data is tab delimited and therefore I use *read.table()*.  Since the first row of data in the text file holds the column names, I use *header = TRUE*.
+
+```{r}
+setwd("~/Desktop/Data")
+titanic <- read.table("Titanic.txt", header = TRUE, as.is = TRUE)
+```
+
+ii. The function *dim()* provides the dimension of its input object.
+```{r}
+dim(titanic)
+str(titanic)
+```
+
+iii. There are multiple ways to do this.  In the following, I add a new column called *Survived.Word* with each entry equal to *"survived"*.  Then I reassign the values in the variable *Survived.Word* to *"died"* in the rows where *Survived* equals $0$.
+
+```{r}
+titanic$Survived.Word <- "survived"
+titanic$Survived.Word[titanic$Survived == 0] <- "died"
+```
+
+Alternatively, we could use *ifelse()* to complete this.  The first argument is a logical vector that's *TRUE* when *Survived* equals $1$ and *FALSE* when *Survived* equals $0$.  
+
+```{r}
+titanic$Survived.Word <- ifelse(titanic$Survived == 1, "surived", "died")
+```
+
+# Part 2
+
+i. To solve this problem we create a sub-matrix of the variables of entry and then pass this sub-matrix into the *apply()* command. 
+```{r}
+sub_mat <- titanic[, c("Survived", "Age", "Fare")]
+apply(sub_mat, 2, mean)
+```
+The mean of *"Survived"* is the *proportion* of passengers that survived the disaster.  The mean of the *Age* variable is *NA*, because some of the passenger's ages are unknown (i.e.\ *Age* also has some missing values).
+
+ii. As in the last question, we can calculate the proportion of survivors by taking the mean of the *Survived* variable, but here we filter to only include female passengers.
+```{r}
+round(mean(titanic$Survived[titanic$Sex == "female"]), 2)
+```
+
+iii. To answer this question we create a sub-matrix *survivors* which only includes the rows of *titanic* corresponding to those surviving the disater.  Then we calculate the proportion as the number of female passengers in the *survivors* matrix divided by the total number of people in the *survivors* matrix.
+
+```{r}
+survivors     <- titanic[titanic$Survived == 1, ]
+proportion    <- sum(survivors$Sex == "female")/length(survivors$Sex)
+round(proportion, 2)
+```
+Alternatively, we can use the *table()* command.
+```{r}
+survivors     <- titanic[titanic$Survived == 1, ]
+proportion    <- table(survivors$Sex)/length(survivors$Sex)[1]
+round(proportion, 2)
+```
+
+iv.  
+```{r}
+classes <- sort(unique(titanic$Pclass))
+Pclass.Survival <- vector("numeric", length = 3)
+names(Pclass.Survival) <- classes
+
+for (i in 1:3) {
+  thisclass          <- titanic[titanic$Pclass == i, ]
+  Pclass.Survival[i] <- round(mean(thisclass$Survived), 2)
+}
+```
+
+v.
+```{r}
+Pclass.Survival2 <- round(tapply(titanic$Survived, titanic$Pclass, mean), 2)
+Pclass.Survival == Pclass.Survival2
+```
+
+vi. 
+```{r}
+Pclass.Survival
+```
+There does appear to be a relationship between survival and class.  We can see from the previous question that the survival rate decreases with ticket class, meaning fewer members of the lower class survived than members of the upper class.

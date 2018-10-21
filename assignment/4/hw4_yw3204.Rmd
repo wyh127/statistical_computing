@@ -1,0 +1,148 @@
+---
+title: "hw4_yw3204"
+author: "wyh"
+date: "10/13/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+```{r}
+library(plyr)
+debt <- read.csv("debt.csv", as.is = TRUE)
+dim(debt)
+head(debt)
+
+# a 
+# calculate the mean of the growth column of a data frame
+mean.growth <- function(df) {
+  return (mean(df$growth))
+}
+
+# b
+avg_g <- daply(debt, 'Country', mean.growth)
+signif(avg_g, 3) # print
+```
+
+## 2.
+```{r}
+avg_g1 <- daply(debt, 'Year', mean.growth)
+signif(avg_g1, 3) # print
+
+# plot
+plot(c(1946:2009), avg_g1, xlab = 'year', ylab = 'gdp_growth')
+```
+
+## 3.
+```{r}
+# a
+c1 <- cor(debt$growth, debt$ratio)
+signif(c1, 3)
+
+# b
+# calculate the correlation between growth and ratio column in a data frame
+cor_fun <- function(df) {
+  return (cor(df$growth, df$ratio))
+}
+
+c2 <- daply(debt, 'Country', cor_fun)
+#mean(c2) #check, if you may
+hist(c2, breaks = 10, main = "cor_hist_ctry", xlab = "cor")
+
+# c
+c3 <- daply(debt, 'Year', cor_fun)
+#mean(c3) #check
+hist(c3, breaks = 10, main = "cor_hist_year", xlab = "cor")
+
+# d
+```
+When splitting by country, we find that most country have negative correlation except Australia, Canada, New Zealand, Norway and Spain.
+When splitting by year, we also find most year have negative correlation but for year 1978, it has the highest positive corrrelation.
+
+## 4.
+```{r}
+l1 <- lm(growth ~ ratio, debt)
+signif(l1$coefficients, 3)
+plot(debt$ratio, debt$growth, xlab = "ratio", ylab = "growth")
+abline(l1, col = "red")
+```
+
+## 5.
+```{r}
+ctrs <- names(c2[c2 < -0.5])
+par(mfrow=c(2,2))
+for(i in ctrs) {
+  plot(debt[debt$Country == i, ]$ratio, debt[debt$Country == i, ]$growth, 
+       xlab = "ratio", ylab = "growth", main = i)
+}
+```
+
+## 6.
+```{r}
+# a
+fra <- debt[debt$Country=="France", ]
+# check
+# dim(fra)
+
+# b
+n <- nrow(fra)
+ng <- c()
+for(i in c(1:n-1)) {
+  ng[i] <- ifelse(fra$Year[i+1] == fra$Year[i]+1, fra$growth[i+1], NA)
+}
+ng[n] <- NA
+fra$next.growth <- ng
+
+signif(fra[fra$Year==1971, ]$next.growth, 3)
+signif(fra[fra$Year==1972, ]$next.growth, 3)
+```
+
+## 7.
+```{r}
+add_ng <- function(df) {
+  n <- nrow(df)
+  ng <- c()
+  for(i in c(1:n-1)) {
+    ng[i] <- ifelse(df$Year[i+1] == df$Year[i]+1, df$growth[i+1], NA)
+  }
+  ng[n] <- NA
+  df$next.growth <- ng
+  return(df)
+}
+
+debt <- ddply(debt, "Country", add_ng)
+
+ind <- debt$Country=="France" & debt$Year == 2009
+signif(debt[ind, ]$next.growth, 3)
+```
+
+## 8.
+```{r}
+l2 <- lm(next.growth~ratio, debt)
+plot(debt$ratio, debt$next.growth, xlab = "ratio", ylab = "next_growth")
+abline(l2, col = 'red')
+signif(l2$coefficients, 3)
+```
+Comparatively speaking, these two perform similarly, both of which have a slightly small negative slope coefficient.
+
+## 9.
+```{r}
+l3 <- lm(next.growth~growth, debt)
+plot(debt$next.growth, debt$growth, xlab = "cur_growth", ylab = "next_growth")
+abline(l3, col = 'red')
+signif(l3$coefficients, 3)
+```
+Comparatively speaking, current growth seems to be a better predictor since it has a larger coefficients.
+
+
+
+
+
+
+
+
+
+
