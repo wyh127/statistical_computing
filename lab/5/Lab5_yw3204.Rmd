@@ -1,0 +1,226 @@
+---
+title: "Lab 5"
+author: "Yuhao Wang, yw3204"
+date: "Nov 12, 2018"
+output: pdf_document
+---
+
+# Instructions 
+Make sure that you upload an RMarkdown file to the canvas page (this should have a .Rmd extension) as well as the PDF output after you have knitted the file (this will have a .pdf extension). The files you upload to the Canvas page should be updated with commands you provide to answer each of the questions below.  You can edit this file directly to produce your final solutions.  The lab is due 11:59pm on Saturday, November 9th.    
+
+# Goal
+
+The goal of this lab is to investigate the empirical behavior of a common hypothesis testing procedure through simulation using R. We consider the traditional two-sample t-test. The 95% confidence interval also leads to the some result.
+
+# Two-Sample T-Test
+
+
+Consider an experiment testing if a 35 year old male's heart rate statistically differs between a control group and a dosage group. Let $X$ denote the control group and let $Y$ denote the drug group.  One common method used to solve this problem is the two-sample t-test.  The null hypothesis for this study is:
+$$H_0:\mu_1-\mu_2=\Delta_0,$$
+where $\Delta_0$ is the hypothesized value.  The assumptions of the two sample pooled t-test follow below:  
+
+## Assumptions 
+
+\begin{enumerate}
+\item $X_1,X_2,\ldots, X_m$ is a random sample from a normal distribution with mean $\mu_1$ and variance $\sigma^2_1.$
+\item $Y_1,Y_2,\ldots, Y_n$ is a random sample from a normal distribution with mean $\mu_2$ and variance $\sigma^2_2.$
+\item The $X$ and $Y$ samples are independent of one another.   
+\end{enumerate}
+
+##  Procedure 
+
+The test statistic is 
+$$t_{calc}=\frac{\bar{x}-\bar{y}-\Delta_0}{\sqrt{\frac{s^2_1}{m}+\frac{s^2_2}{n}}},$$
+where $\bar{x},\bar{y}$ are the respective sample means and $s_1^2,s_2^2$ are the respective sample standard deviations. 
+
+The approximate degrees of freedom is  
+\[
+df=\frac{\Big{(}\frac{s^2_1}{m}+\frac{s_2^2}{n}\Big{)}^2}{\frac{(s_1^2/m)^2}{m-1}+\frac{(s_2^2/n)^2}{n-1}}
+\]
+Under the null hypothesis, $t_{calc}$ has a student's t-distribution with $df$ degrees of freedom.     
+
+##  Rejection rules 
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{c|c}
+Alternative Hypothesis   &  P-value calculation \\
+\hline
+&\\
+$H_A: \mu_1-\mu_2>\Delta_0$  \ \ (upper-tailed) & $P(t_{calc}>T)$ \\
+&\\
+\hline
+&\\
+$H_A:\mu_1-\mu_2<\Delta_0$ \ \ (lower-tailed) & $P(t_{calc}<T)$ \\
+&\\
+\hline
+&\\
+$H_A: \mu_1-\mu_2 \neq\Delta_0$ \ \ (two-tailed) & $2*P(|t_{calc}|>T)$ \\
+&\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Reject $H_0$ when: $$Pvalue\leq \alpha$$ 
+
+# Tasks
+
+1) Using the **R** function **t.test**, run the two sample t-test on the following simulated dataset.  Note that the **t.test** function defaults a two-tailed alternative.  Also briefly interpret the output.    
+```{r}
+set.seed(5)
+sigma=5
+Control <- rnorm(30,mean=10,sd=sigma)
+Dosage <- rnorm(35,mean=12,sd=sigma)
+#t.test()
+t.test(Control, Dosage, alternative = "t", mu = -5)
+t.test(Control, Dosage, alternative = "g", mu = -5)
+t.test(Control, Dosage, alternative = "l", mu = -5)
+```
+Assume the null is $H_0: \mu_1 - \mu_2 = -5$. The P-values for alternative $H_{A1}: \mu_1 - \mu_2 \neq -5$, $H_{A2}: \mu_1 - \mu_2 > -5$, and $H_{A3}: \mu_1 - \mu_2 < -5$ are seperately 0.047, 0.023 and 0.98, which are all insignificant when $\alpha = 0.01$. Therefore, we accept the null that the difference of mean is -5, which is also consolidated by the 95% interval.
+
+
+2)  Write a function called **emperical.size** that simulates **R** different samples of $X$ for control and **R** different samples of $Y$ for the drug group and computes the proportion of test statistics that fall in the rejection region.  The function should include the following:  
+\begin{itemize}
+\item Inputs:
+\begin{itemize}
+\item {\bf R} is the number of simulated data sets (simulated test statistics).  Let  {\bf R} have default 10,000.  
+\item Parameters {\bf mu1}, {\bf mu2}, {\bf sigma1} and {\bf sigma2} which are the respective true means and true standard deviations of $X$ \& $Y$.  Let the parameters have respective defaults {\bf mu1=0}, {\bf mu1=0}, {\bf sigma1=1} and {\bf sigma2=1}.  
+\item Sample sizes {\bf n} and {\bf m} defaulted at {\bf m=n=30}.  
+\item \textbf{level} is the significance level as a decimal with default at $\alpha=.05$.  
+\item \textbf{value} is the hypothesized value defaulted at 0.  
+\end{itemize}
+\item The output should be a \textbf{list} with the following labeled elements: 
+\begin{itemize}  
+\item \textbf{statistic.list} vector of simulated t-statistics (this should have length {\bf R}).  
+\item \textbf{pvalue.list} vector of empirical p-values (this should have length {\bf R}).  
+\item \textbf{empirical.size} is a single number that represents the proportion of simulated test statistics that fell in the rejection region.    
+\end{itemize}
+\end{itemize}
+
+\pagebreak
+
+I started the function below: 
+```{r}
+emperical.size <- function(R=10000,
+                           mu1=0,mu2=0,
+                           sigma1=1,sigma2=1,
+                           m=30,n=30,
+                           level=.05,
+                           value=0,
+                           direction="Two") {
+  
+  #Define empty lists
+  statistic.list <- rep(0,R)
+  pvalue.list <- rep(0,R)
+  
+  for(i in c(1:R)) {
+    
+    Control <- rnorm(m, mean=mu1, sd=sigma1)
+    Dosage <- rnorm(n, mean=mu2, sd=sigma2)
+    
+    t <- mean(Control) - mean(Dosage) - value
+    t <- t / sqrt(sigma1 **2 / m + sigma2 ** 2 / n)
+    
+    df <- (sigma1 **2 / m + sigma2 ** 2 / n) ** 2
+    df <- df / (sigma1^4 / (m^2 * (m-1)) + sigma2^4 / (n^2 * (n-1)))
+    
+    # assume a two sided test
+    p <- (1 - pt(abs(t), df)) * 2
+    
+    statistic.list[i] <- t
+    pvalue.list[i] <- p
+  }
+  
+  empirical.size <- sum(pvalue.list < level) / R
+  
+  return (list(statistic.list, pvalue.list, empirical.size))
+}
+
+emperical.size(R = 10, mu1 = 10, mu2 = 12, sigma1 = 5, sigma2 = 5)
+```
+Evaluate your function with the following inputs 
+**R=10**,**mu1=10**,**mu1=12**,**sigma1=5** and **sigma2=5**. 
+
+
+
+
+3) Assuming the null hypothesis $$H_0:\mu_1-\mu_2=0$$ is true, compute the empirical size using 10,000 simulated data sets.  Use the function **emperical.size** to accomplish this task and store the object as **sim**.  Output the empirical size quantity **sim$size**.  Comment on this value.  What is it close to?     
+```{r}
+sim <- emperical.size(R = 100000, mu1 = 10, mu2 = 10, sigma1 = 5, sigma2 = 5)
+sim[[3]]
+```
+It is close to 0.04.
+
+  **Note:**  use **mu1=mu1=10** (i.e., the null is true).  Also set **sigma1=5**,**sigma2=5** and **n=m=30**. 
+
+
+4) Plot a histogram of the simulated P-values, i.e., **hist(sim$pvalue.list)**.  What is the probability distribution shown from this histogram?  Does this surprise you?   
+```{r}
+hist(sim[[2]], xlab = "P-value", main = "Hist. of P-value")
+```
+The distribution is close to the uniform distribution on the interavl $(0, 1)$. Actually, it is not dificult to prove under the null hypothesis its distribution is exactly uniform $U(0, 1)$.
+
+5) Plot a histogram illustrating the empirical sampling sampling of the t-statistic, i.e., **hist(sim$statistic.list,probability =TRUE)**.  What is the probability distribution shown from this histogram?    
+```{r}
+hist(sim[[1]], probability = TRUE, xlab = "t-stat", main = "Hist. of t-stat")
+```
+The distribution shown above is quite like a normal distribution with mean close to 0.
+
+6) Run the following four lines of code:
+```{r}
+emperical.size(R=1000,mu1=10,mu2=10,sigma1=5,sigma2=5)[[3]]
+emperical.size(R=1000,mu1=10,mu2=12,sigma1=5,sigma2=5)[[3]]
+emperical.size(R=1000,mu1=10,mu2=14,sigma1=5,sigma2=5)[[3]]
+emperical.size(R=1000,mu1=10,mu2=16,sigma1=5,sigma2=5)[[3]]
+```
+
+
+      **emperical.size(R=1000,mu1=10,mu1=10,sigma1=5,sigma2=5)$emperical.size**
+
+      **emperical.size(R=1000,mu1=10,mu1=12,sigma1=5,sigma2=5)$emperical.size**
+
+      **emperical.size(R=1000,mu1=10,mu1=14,sigma1=5,sigma2=5)$emperical.size**
+
+      **emperical.size(R=1000,mu1=10,mu1=16,sigma1=5,sigma2=5)$emperical.size**
+      
+      Comment on the results.  
+
+The proportion of rejecting the null is increasing as mu2 increases and the increasing speed is not linear.
+
+
+
+7) Run the following four lines of code:
+```{r}
+emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=10,n=10)[[3]]
+emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=30,n=30)[[3]]
+emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=50,n=50)[[3]]
+emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=100,n=100)[[3]]
+```
+
+
+      **emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=10,n=10)$emperical.size**
+
+      **emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=30,n=30)$emperical.size**
+
+      **emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=50,n=50)$emperical.size**
+
+      **emperical.size(R=10000,mu1=10,mu2=12,sigma1=10,sigma2=10,m=100,n=100)$emperical.size**
+      
+      Comment on the results.  
+
+The proportion of rejection is also increasing as the sample size of the two group increases simultaneously.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

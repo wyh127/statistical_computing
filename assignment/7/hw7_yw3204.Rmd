@@ -1,0 +1,146 @@
+---
+title: "hw7_yw3204"
+author: "wyh"
+date: "11/25/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## i.
+```{r}
+poisLoglik <- function(l, data) {
+  num <- (l ** data) * exp(-l)
+  deno <- factorial(data)
+  ratio <- num / deno
+  res <- sum(log(ratio))
+  return(res)
+}
+
+poisLoglik(1, c(1, 0, 0, 1, 1))
+```
+
+## ii.
+```{r}
+# read data
+moretti <- read.csv("moretti.csv")
+
+count_new_genres <- function(year) {
+  return(sum(moretti$Begin == year))
+}
+
+count_new_genres(1803)
+count_new_genres(1850)
+```
+The values are 0 and 3 seperately.
+
+## iii.
+```{r}
+new_genres <- c()
+
+for(i in c(1740:1900)) {
+  new_genres <- c(new_genres, count_new_genres(i))
+}
+
+new_genres[64]
+new_genres[111]
+```
+The positions in the vector correspond to the years 1803 and 1850 are 64 and 111. The values should be 0 and 3 which are exactly what in the corresponding positions in vector new_genres. 
+
+## iv.
+```{r}
+lambdas <- seq(0.01, 1, 0.01)
+logs <- c()
+for(l in lambdas) {
+  logs <- c(logs, poisLoglik(l, new_genres))
+}
+plot(lambdas, logs, type = "l", xlab = "lambda", ylab = "log-likelihood")
+```
+The maximum is reached at around 0.2.
+
+## v.
+```{r}
+negPoisLoglik <- function(l, data = new_genres) {
+  num <- (l ** data) * exp(-l)
+  deno <- factorial(data)
+  ratio <- num / deno
+  res <- sum(log(ratio))
+  return(-res)
+}
+
+nlm(negPoisLoglik, p = 1)
+```
+According to the result above, the minimum of the negative log-likelihhod function is reached at around 0.273. Thus, the maximum of the log-likelihhod function is reached at around 0.273.
+
+## vi.
+```{r}
+# store the time interval
+year_lap <- c()
+
+# find those year which has new genres
+inds <- which(new_genres != 0)
+
+year_lap <- diff(inds)
+# for(i in c(1:length(inds)-1)) {
+#   year_lap <- c(year_lap, inds[i+1] - inds[i])
+# }
+
+year_lap
+mean(year_lap)
+sd(year_lap)
+coe_var <- sd(year_lap)/mean(year_lap)
+```
+
+## vii.
+### a.
+```{r}
+cal_interval <- function(vec) {
+  inds <- which(vec != 0)
+  intergenre_intervals <- diff(inds)
+  return(intergenre_intervals)
+}
+
+cal_interval(new_genres)
+```
+
+### b.
+```{r}
+cal_CoeVar <- function(num_ys, lambda) {
+  n_genres <- rpois(num_ys, lambda)
+  
+  intervals <- cal_interval(n_genres)
+  
+  coe_var <- sd(intervals)/mean(intervals)
+  
+  return(list(intervals, coe_var))
+}
+
+cal_CoeVar(161, 0.273)
+
+# chek teh mean
+# mean(cal_CoeVar(162, 0.273)[[1]])
+```
+
+## viii.
+```{r}
+coes <- c()
+
+for(i in c(1:10000)) {
+  coes <- c(coes, cal_CoeVar(161, 0.273)[[2]])
+}
+
+# fraction of simulations having a higher coefficient of variation than Moretti’s data
+sum(coes > coe_var) / length(coes)
+```
+
+## ix.
+The proportion is relatively small and thus tells us that we conjecture that genres don't tend to appear together in burst.
+
+
+
+
+
+
+

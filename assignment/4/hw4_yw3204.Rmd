@@ -131,7 +131,7 @@ Comparatively speaking, these two perform similarly, both of which have a slight
 ## 9.
 ```{r}
 l3 <- lm(next.growth~growth, debt)
-plot(debt$next.growth, debt$growth, xlab = "cur_growth", ylab = "next_growth")
+plot(debt$growth, debt$next.growth, xlab = "cur_growth", ylab = "next_growth")
 abline(l3, col = 'red')
 signif(l3$coefficients, 3)
 ```

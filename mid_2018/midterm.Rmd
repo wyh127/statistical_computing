@@ -1,0 +1,221 @@
+---
+title: "GR5206 Midterm Exam"
+author: "Name and UNI"
+date: "10/19/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+The STAT GR5206 Fall 2018 Midterm is open notes, open book(s), open computer and online resources are allowed. Students are **not** allowed to communicate with any other people regarding the exam. This includes emailing fellow students, using WeChat and other similar forms of communication. Before the exam, the students should **turn off** their cellphone and pass it to the left side of each row. At the same time, please **close** the mailbox and **log out** WeChat and all the other apps for messaging and chatting. If there is any suspicion of one or more students cheating, further investigation will take place. If students do not follow the guidelines, they will receive a zero on the exam and potentially face more severe consequences. The exam will be posted on Canvas at **2:50PM**.  Students are required to submit both the .pdf and .Rmd files on Canvas (or .html if you must) by **4:30PM**. Late exams will not be accepted.
+
+# Part 1 (Google Play Store Apps Data - Split/Apply/Combine and R plot, 11 + 2 pts)
+We work on the `apps` dataset which contains approximately $7,700$ Google Play Store apps. There are 13 features that describe a given app. They are:
+\begin{itemize}
+\item \textbf{App} -- Application name.
+\item \textbf{Category} -- Category the app belongs to.
+\item \textbf{Rating} -- Overall user rating of the app (between 0 and 5).
+\item \textbf{Reviews} -- Number of user reviews for the app.
+\item \textbf{Size} -- Size of the app.
+\item \textbf{Installs} -- Number of user downloads/installs for the app.
+\item \textbf{Type} -- Paid of Free
+\item \textbf{Price} -- Price of the app
+\item \textbf{Content Rating} Age group the app is targeted at
+\item \textbf{Genres} An app can belong to multiple genres (apart from its main category). For example, a musical family game will belong to Music, Game, Family genres.
+\item \textbf{Last Updated} Date when the app was last updated on Play Store
+\item \textbf{Current Ver} Current version of the app available on Play Store
+\item \textbf{Android Ver} Minimum required Android version 
+\end{itemize}
+
+Read in the dataset using the following code:  
+```{r}
+apps<-read.csv("apps.csv", header = T)
+apps$Reviews<-as.numeric(apps$Reviews)
+apps$Installs<-factor(apps$Installs, level= c("1+", "5+", "10+", "50+", "100+", "500+", "1,000+", "5,000+", "10,000+", "50,000+", "100,000+", "500,000+", "1,000,000+","5,000,000+","10,000,000+","50,000,000+", "100,000,000+", "500,000,000+", "1,000,000,000+"))
+head(apps)
+```
+
+## Problem 1.0 
+Check the dimension of `apps`, make sure that there are $7,726$ lines and $13$ variables (features). [1 pt]
+```{r}
+# code goes here
+dim(apps)
+```
+
+## Prblem 1.1
+In order to get an overview of the dataset, we want to check some summary statistics of each variable, and this can be done by calling the `R` function `summary()`. Compute the summary statistics of all 13 variables and display the results in a **list**. To receive full credit, you must use a vectorized function from the `apply` family or `plyr` family. [2 pts]
+```{r}
+# code goes here
+#lapply(apps, summary)
+library("plyr")
+#llply(apps, summary)
+#alply(apps, 2, summary)
+```
+
+
+## Problem 1.2
+We want to investigate the association between the user's overall rating (`Rating`) of an app and the total number of installs (`Installs`). Use function `plot()` to construct a multiple boxplot of the overall rating of an app split by number of installs (`Installs`). Can you see any relationship in the plot? [3 pts] 
+
+Adjust the labels of $x$-axis. Make sure that all levels of the variable `Installs` show in the plot. [2 extra pts]  
+```{r}
+# code goes here
+#boxplot(Rating~Installs, data = apps)
+plot(apps$Installs, apps$Rating, las = 2, cex.axis = 0.6)
+```
+
+## Problem 1.3
+We now investigate how the overall rating (`Rating`) is associated with the category of the app (`Category`) and its price (`Price`). Use **Split/Apply/Combine** strategy to split the dataset by `Category`. For each category, generate a plot of user's rating (`Rating`) against the app's price (`Price`). Display all plots in one figure. To receive full credit, you must use a vectorized function from the `plyr` family. Make sure your figure contains **33** subplots, with each of them corresponding to one category. [5 pts]
+```{r}
+# code goes here
+# amr or mai
+par(mfrow = c(5, 7), mar=c(0.8, 0.8, 0.8, 0.8))
+
+rat_pri <- function(df) {
+  plot(df$Price, df$Rating)
+}
+
+d_ply(apps, .(Category), rat_pri)
+```
+
+
+# Part 2 (Basic Web Scraping, 15 + 2 pts)
+In this part, we look at the voting record of the 2018 US Congress for roll call 274. The votes were compiled from [http://clerk.house.gov](http://clerk.house.gov). The raw data have been saved in the file `Roll_Call_274.xml`. We want to extract the voting results for 427 members of the House of Representatives. First, we read in data. 
+
+```{r}
+rollCall274<-readLines("Roll_Call_274.xml")
+```
+
+## Problem 2.0
+Check the number of lines contained in the `Roll_call_274.xml` file. There should be 485 lines. [1 pt]
+```{r}
+# code goes here
+length(rollCall274)
+```
+
+## Problem 2.1
+Use the `grep()` function to find the lines in the file that correspond to the votes. Make sure `grep()` finds 427 lines. Hint: such a line starts with \texttt{<recorded-vote>}. [2 pts]
+```{r}
+# code goes here
+pat <- "<recorded-vote>"
+vote_ind <- grep(pat, rollCall274)
+vote <- rollCall274[vote_ind]
+length(vote)
+```
+
+## Problem 2.2
+Write a regular expression that will capture the ID of a member. Using it extract the ID of each member. Hint: you can use the fact that \texttt{name-id=} appears before the ID. The ID is inside a pair of quotes, and it consists of one capital latter and six digits. [2 pts]
+```{r}
+# code goes here
+pat1 <- "[A-Z][0-9]{6}"
+loc1 <- regexpr(pat1, vote)
+ID <- substr(vote, loc1, regexpr(pat1, vote)+6)
+```
+
+## Problem 2.3
+Using a regular expression extract the name of each member. Make sure that you can extract all names for 427 members. [2 extra pts] 
+```{r}
+# code goes here
+pat2 <- "sort-field"
+loc2 <- regexpr(pat2, vote)
+
+pat21 <- "unaccented-name"
+loc21 <- regexpr(pat21, vote)
+
+names <- substr(vote, loc2+12, loc21-3)
+```
+
+## Problem 2.4
+Extract the party of each member by using a regular expression. There should be 193 Democrats and 234 Republicans. [2 pts] 
+```{r}
+# code goes here
+pat3 <- "party"
+loc3 <- regexpr(pat3, vote)
+
+pat31 <- "state"
+loc31 <- regexpr(pat31, vote)
+
+party <- substr(vote, loc3+7, loc31-3)
+```
+
+## Problem 2.5
+Extract the state for each member by using a regular expression. [2 pts]
+```{r}
+# code goes here
+pat4 <- "state"
+loc4 <- regexpr(pat4, vote)
+
+pat41 <- "role"
+loc41 <- regexpr(pat41, vote)
+
+state <- substr(vote, loc4+7, loc41-3)
+```
+
+## Problem 2.6
+Last, use a regular expression to extract the vote. [2 pts]
+```{r}
+# code goes here
+pat5 <- "<vote>"
+loc5 <- regexpr(pat5, vote)
+
+pat51 <- "</vote>"
+loc51 <- regexpr(pat51, vote)
+
+vote1 <- substr(vote, loc5+6, loc51-1)
+```
+
+## Problem 2.7
+Make the extracted vote as a factor, and check its levels. Make a new variable called `numeric.vote`, which takes value 1 if the member voted "Yes (Aye)", 0 if the vote is "No", and -1 for "Not Voting". [2 pts]
+```{r}
+# code goes here
+vote1 <- factor(vote1)
+levels(vote1)
+numeric.vote <- ifelse(vote1 == "Aye", 1, ifelse(vote1 == "No", 0, -1))
+```
+
+## Problem 2.8
+Create a dataframe `rollCall274`, which contains the following five variables: `name`, `state`, `party`, `vote`, `numeric.vote`. Use `id` to name the rows of this dataframe. [2 pts]
+```{r}
+# code goes here
+rollCall274 <- data.frame(name = names, state = state, party = party, vote = vote1, numeric.vote = numeric.vote)
+
+row.names(rollCall274) <- ID
+```
+
+# Part 3 (Bootstrap, 4 + 2 pts)
+We consider the `strikes` data which we used in Lecture 6. The data set is about strikes in 18 countries over 35 years (compiled by Bruce Western, in the Sociology Department at Harvard University). The measured variables are:
+\begin{itemize}
+\item \textbf{country, year} -- country and year of data collection
+\item \textbf{strike.volume} -- days on strike per 1000 workers
+\item \textbf{unemployment} -- unemployment rate
+\item \textbf{inflation} -- inflation rate
+\item \textbf{left.parliament} -- leftwing share of the government
+\item \textbf{centralization} -- centralization of unions
+\item \textbf{density} -- density of unions
+\end{itemize}
+
+In this problem, we *only* look at the strikes in Italy. On this subset, we run a simple linear regression using `strike.volume` as the response ($Y$) and `left.parliament` as the predictor ($X$). Our model is
+\[
+Y = \beta_0 + \beta_1 X + \epsilon, \quad \epsilon \sim \mathcal{N} (0, \sigma^2).
+\]
+
+```{r}
+strikes<-read.csv("strikes.csv", header = T)
+italy.strikes<-strikes[strikes$country == "Italy", ]
+dim(italy.strikes)
+lm.fit<- lm(strike.volume ~ left.parliament, data = italy.strikes)
+round(lm.fit$coefficients,3)
+```
+
+## Problem 3.1
+Denote our estimate of $\beta_1$ as $\hat{\beta}_1$, which is 40.291 according to the analysis above. Use the Bootstrap method to estimate the variance of
+$\hat{\beta}_1$. Here, you may draw 100 Bootstrap samples. [4 pts]
+```{r}
+# code goes here
+```
+
+## Problem 3.2
+Construct a 95\% confidence interval of $\beta_1$ based on the result in part 3.1. [2 extra pts]
+```{r}
+# code goes here
+```
+
