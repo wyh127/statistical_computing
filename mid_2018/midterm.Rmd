@@ -211,11 +211,28 @@ Denote our estimate of $\beta_1$ as $\hat{\beta}_1$, which is 40.291 according t
 $\hat{\beta}_1$. Here, you may draw 100 Bootstrap samples. [4 pts]
 ```{r}
 # code goes here
+beta1 <- c()
+
+for(i in c(1:100)) {
+  ind <- sample(c(1:35), size = 35, replace = T)
+  data <- italy.strikes[ind, ]
+  lm_tmp <- lm(strike.volume~left.parliament, data)
+  beta1 <- c(beta1, as.numeric(lm_tmp$coefficients[2]))
+}
+
+var(beta1)
+sd(beta1)
 ```
 
 ## Problem 3.2
 Construct a 95\% confidence interval of $\beta_1$ based on the result in part 3.1. [2 extra pts]
 ```{r}
 # code goes here
+# percentile based
+quantile(beta1, c(0.025, 0.975))
+
+# regular Bootstrap interval
+2 * lm.fit$coefficients[2] - quantile(beta1, 0.975)
+2 * lm.fit$coefficients[2] - quantile(beta1, 0.025)
 ```
 

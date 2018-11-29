@@ -58,6 +58,7 @@ for(l in lambdas) {
 }
 plot(lambdas, logs, type = "l", xlab = "lambda", ylab = "log-likelihood")
 ```
+
 The maximum is reached at around 0.2.
 
 ## v.
@@ -76,28 +77,27 @@ According to the result above, the minimum of the negative log-likelihhod functi
 
 ## vi.
 ```{r}
-# store the time interval
-year_lap <- c()
-
-# find those year which has new genres
-inds <- which(new_genres != 0)
-
-year_lap <- diff(inds)
-# for(i in c(1:length(inds)-1)) {
-#   year_lap <- c(year_lap, inds[i+1] - inds[i])
-# }
+# take first order difference
+year_lap <- diff(moretti$Begin)
 
 year_lap
 mean(year_lap)
 sd(year_lap)
 coe_var <- sd(year_lap)/mean(year_lap)
+coe_var
 ```
 
 ## vii.
 ### a.
 ```{r}
 cal_interval <- function(vec) {
-  inds <- which(vec != 0)
+  inds <- c()
+  for(i in c(1:length(vec))) {
+    if(vec[i] != 0) {
+      inds <- c(inds, rep(i, vec[i]))
+    }
+  }
+  
   intergenre_intervals <- diff(inds)
   return(intergenre_intervals)
 }
@@ -119,7 +119,7 @@ cal_CoeVar <- function(num_ys, lambda) {
 
 cal_CoeVar(161, 0.273)
 
-# chek teh mean
+# chek the mean
 # mean(cal_CoeVar(162, 0.273)[[1]])
 ```
 
@@ -136,7 +136,7 @@ sum(coes > coe_var) / length(coes)
 ```
 
 ## ix.
-The proportion is relatively small and thus tells us that we conjecture that genres don't tend to appear together in burst.
+The proportion from the last question shows that the coefficient of variation for the moretti's data is relatively higher than that of the supposed Poisson process. That's to say, the appearance of genres is not following a Poisson process. And thus, it doesn't have stationary and independent increment which means genres tend to appear together in burst.
 
 
 
