@@ -46,10 +46,149 @@ huber.loss <- function(beta) {
 
 ## 4.
 ```{r}
-grad.descent <- function() {
+library(numDeriv)
+
+grad.descent <- function(f, x0, max.iter = 200, step.size = 0.05, stopping.deriv = 0.01, ...) {
   
+  n    <- length(x0)
+  xmat <- matrix(0, nrow = n, ncol = max.iter)
+  xmat[,1] <- x0
+  
+  for (k in 2:max.iter) {
+    # Calculate the gradient
+    grad.cur <- grad(f, xmat[ ,k-1], ...) 
+    
+    # Should we stop?
+    if (all(abs(grad.cur) < stopping.deriv)) {
+      k <- k-1; break
+    }
+    
+    # Move in the opposite direction of the grad
+    xmat[ ,k] <- xmat[ ,k-1] - step.size * grad.cur
+  }
+  
+  xmat <- xmat[ ,1:k] # Trim
+  return(list(x = xmat[,k], xmat = xmat, k = k))
 }
+
+gd <- grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+gd$x
+gd$k
 ```
+The final coefficients are listed above and it takes 127 steps to converge.
+
+## 5.
+```{r}
+obj <- apply(gd$xmat, 2, huber.loss)
+
+plot(1:127, obj, type = "l", xlab = "iterations", ylab = "Huber loss")
+```
+At start, the algorithm converges quickly and when it is near the minimum, it converges slowly.
+
+## 6.
+```{r}
+gd1 <- grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.1, stopping.deriv = 0.1)
+
+obj1 <- apply(gd1$xmat, 2, huber.loss)
+
+#plot(1:200, obj1[1:200], type = "l", xlab = "iterations", ylab = "Huber loss")
+plot(151:200, obj1[151:200], type = "l", xlab = "iterations", ylab = "Huber loss")
+
+#gd1$xmat[, 151:200]
+```
+The algorithm now odesn't converge but oscillates. We can deduce that the coefficients are changing periodically which is further suported by checking the xmat from gd1 above.
+
+## 7.
+```{r}
+# compare the estimated and true coefficients
+gd$x
+
+sparse.grad.descent <- function(f, x0, max.iter = 200, step.size = 0.05, stopping.deriv = 0.01, ...) {
+  
+  n    <- length(x0)
+  xmat <- matrix(0, nrow = n, ncol = max.iter)
+  xmat[,1] <- x0
+  
+  for (k in 2:max.iter) {
+    # Calculate the gradient
+    grad.cur <- grad(f, xmat[ ,k-1], ...) 
+    
+    # Should we stop?
+    if (all(abs(grad.cur) < stopping.deriv)) {
+      k <- k-1; break
+    }
+    
+    # Move in the opposite direction of the grad
+    tmp <- xmat[ ,k-1] - step.size * grad.cur
+    tmp <- ifelse(abs(tmp) <= 0.05, 0, tmp) 
+    xmat[ ,k] <- tmp
+  }
+  
+  xmat <- xmat[ ,1:k] # Trim
+  return(list(x = xmat[,k], xmat = xmat, k = k))
+}
+
+# sparse estimates
+gd.sparse <- sparse.grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+# final estimates
+gd.sparse$x
+```
+
+## 8.
+```{r}
+lm_coe <- as.numeric(lm(y~x-1)$coef)
+gd_coe <- gd$x
+spa_gd_coe <- gd.sparse$x
+
+mean((lm_coe-b)^2)
+mean((gd_coe-b)^2)
+mean((spa_gd_coe-b)^2)
+```
+Not surprisingly, sparse gradient descent estimate has the least mean squared error and is thus the best.
+
+## 9.
+```{r}
+set.seed(10)
+y <- x %*% b + rt(n, df=2)
+
+gd_new <- grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+gd_new$x
+mean((gd_new$x - b)^2)
+
+spa_gd_new <- sparse.grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+spa_gd_new$x
+mean((spa_gd_new$x - b)^2)
+
+```
+The new coefficients from gradient descent looks nothing new. But that from sparse gradient descent is a little different since we notice that the first element in the coefficient is 0 which is actually not 0. As for the MSE, the gradient descent is superior and we may deduce the sparse gradient descnt is more variable.
+
+## 10.
+```{r}
+mse_gd <- c()
+mse_sgd <- c()
+
+for(i in 1:10) {
+  y <- x %*% b + rt(n, df=2)
+  
+  gd_new <- grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+  mse_gd <- c(mse_gd, mean((gd_new$x - b)^2))
+  
+  spa_gd_new <- sparse.grad.descent(huber.loss, x0 = rep(0, p), step.size = 0.001, stopping.deriv = 0.1)
+  mse_sgd <- c(mse_sgd, mean((spa_gd_new$x - b)^2))
+}
+
+mean(mse_gd)
+mean(mse_sgd)
+
+min(mse_gd)
+min(mse_sgd)
+```
+Strictly speaking, the average MSE from the gradient descent is lower. As for the minimum MSE, the sparse gradient descent is significantly less which is in line with the former result that sparse gradient descent is more variable. 
+
+
+
+
+
 
 
 
