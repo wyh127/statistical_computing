@@ -1,0 +1,156 @@
+---
+title: "Homework 7 Solutions Help"
+output: pdf_document
+---
+
+
+
+# Part 1
+
+```{r}
+genres <- read.csv("moretti.csv", as.is = TRUE)
+head(genres)
+```
+
+i.
+
+```{r}
+poisLoglik <- function(lambda, data) {
+  return(sum(dpois(data, lambda = lambda, log = TRUE)))
+}
+
+data1 <- c(1, 0, 0, 1, 1)
+lambda1 <- 1
+
+poisLoglik(lambda1, data1)
+poisLoglik(0, data1)
+```
+
+ii.
+
+```{r}
+count_new_genres <- function(year) {
+  return(sum(genres$Begin == year))
+}
+
+
+count_new_genres(1803)
+count_new_genres(1850)
+
+genres$Begin
+which(genres$Begin==1846)
+#genres
+```
+
+
+iii.
+
+```{r}
+years <- seq(1740, 1900)
+num.years <- length(years)
+new_genres <- rep(NA, num.years)
+names(new_genres) <- years
+
+for (i in 1:num.years) {
+  new_genres[i] <- count_new_genres(years[i])
+}
+
+twoyears <- which(years == 1803 | years == 1850)
+twoyears
+new_genres[twoyears]
+new_genres
+```
+
+
+iv.
+```{r}
+lambda_seq  <- seq(0, 3, length.out = 100)
+num.lambdas <- length(lambda_seq)
+Logliks    <- rep(NA, num.lambdas)
+for (i in 1:num.lambdas) {
+  Logliks[i] <- poisLoglik(lambda_seq[i], new_genres)
+}
+library(ggplot2)
+ggplot() + 
+  geom_line(mapping = aes(x = lambda_seq, y = Logliks)) +
+  labs(main = "Plot of the Log Likelihood Function", ylab = "Log Likelihood", xlab = "Lambda")
+
+lambda_seq[which.max(Logliks)]
+```
+
+v.
+```{r}
+NegpoisLoglik <- function(lambda, data) {
+  return(-sum(dpois(data, lambda = lambda, log = TRUE)))
+}
+nlm(NegpoisLoglik, 1, new_genres)
+```
+
+vi.
+
+```{r}
+#genres$Begin
+intergenre_intervals <- diff(sort(genres$Begin))
+intergenre_intervals 
+mean(intergenre_intervals)
+sd(intergenre_intervals)
+moretti.coef <- sd(intergenre_intervals)/mean(intergenre_intervals)
+```
+
+vii. 
+
+a.
+```{r}
+# Look at body of the function 
+names(new_genres) <- 1:length(new_genres)
+new_genres
+new_genres        <- new_genres[new_genres !=0]
+new_genres
+ years             <- as.numeric(rep(names(new_genres), new_genres))
+years
+
+# define function
+intergenre_calc <- function(new.genres) {
+  names(new.genres) <- 1:length(new.genres)
+  new.genres        <- new.genres[new.genres !=0]
+  years             <- as.numeric(rep(names(new.genres), new.genres))
+  return(diff(sort(years)))
+}
+
+
+intergenre_intervals2 <- intergenre_calc(new_genres)
+all(intergenre_intervals == intergenre_intervals2)
+```
+
+b.
+```{r}
+Pois.sim <- function(num.years, mean.genres) {
+  samples <- rpois(num.years, lambda = mean.genres)
+  intergenre_intervals <- intergenre_calc(samples)
+  coef.of.var <- sd(intergenre_intervals)/mean(intergenre_intervals)
+  return(list(intergenre_intervals = intergenre_intervals, coef.of.var = coef.of.var))
+}
+
+for (i in 1:10) {
+  res <- Pois.sim(161, 0.273)
+  print(mean(res$intergenre_intervals))
+}
+```
+
+viii.
+```{r}
+n <- 10000
+coef.of.var <- rep(NA, n)
+
+for (i in 1:n) {
+  res <- Pois.sim(161, 0.273)
+  coef.of.var[i] <- res$coef.of.var
+}
+
+mean(coef.of.var > moretti.coef)
+```
+
+ix.
+
+The above result tells us that there isn't really any evidence that new genres appear together in bursts.  If the appearance of new genres were truly random (not clustered), meaning they appear according to a Poisson process, then around 23 percent of the time we would see results as or more clustered than Moretti's data (when we consider the coefficient of variation as a measure of the amount of cluster).
+

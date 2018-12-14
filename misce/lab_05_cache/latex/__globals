@@ -1,0 +1,4 @@
+unnamed-chunk-2	sprint.m.dat	read.table	sprint.w.dat
+unnamed-chunk-3	n	set.seed	x	runif	y	rnorm	plot
+unnamed-chunk-4	plot
+unnamed-chunk-5	x2	sort	runif	n	y2	x	rnorm

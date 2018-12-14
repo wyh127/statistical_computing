@@ -1,0 +1,110 @@
+---
+title: "Lab 11: Tidyverse II: Tidyr and Advanced Dplyr"
+author: "Statistical Computing, 36-350"
+date: "Week of Monday November 5, 2018"
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, autodep=TRUE, cache.comments=TRUE)
+```
+
+Name:  
+Andrew ID:  
+Collaborated with:  
+
+This lab is to be done in class (completed outside of class if need be). You can collaborate with your classmates, but you must identify their names above, and you must submit **your own** lab as an knitted HTML file on Canvas, by Sunday 11:59pm, this week.
+
+**This week's agenda**: practicing grouping, spreading and gathering, and joins.
+
+```{r}
+# Load the tidyverse!
+library(tidyverse)
+```
+
+Practice with grouping
+===
+
+Below we read in a data frame `sprint.m.df` containing the top men's times in the 100m sprint, as seen in previous labs. In the following, unless stated otherwise, use pipes and `dplyr` verbs to solve each part as cleanly/succintly as you can.
+
+```{r}
+sprint.m.df = read.table(
+  file="http://www.stat.cmu.edu/~ryantibs/statcomp/data/sprint.m.dat",
+  sep="\t", header=TRUE, quote="", stringsAsFactors=TRUE)
+```
+
+- **1a.** Compute, for each country, the fastest time among athletes who come from that country, and display the first 10 results, ordered alphabetically by country. Also compute, for each city, the fastest time among athletes who ran in that city, and display the first 10 results, ordered alphabetically by city. Hint: `group_by()`, `summarise()`. 
+
+- **1b.** With the most minor modification to your code possible, do the same computations as in the last part, but now display the first 10 results ordered by increasing time. Hint: `arrange()`.
+
+- **1c.** Rewrite your solution in the last part using base R. Hint: `tapply()` gives probably the easiest route here. Note: your code here shouldn't be too much more complicated than your code in the last part.
+
+- **1d.** Compute, for each country, the quadruple: (Name, City, Country, Time) corresponding to the athlete with the fastest time among athletes from that country. Display the first 10 results, ordered by increasing time. If there are ties, then show all the results that correspond to the fastest time. Repeat the same computation, but for the fastest time per city. Hint: `group_by()`, `filter()`, `select()`.
+
+- **1e.** Rewrite the rest of your solution in the last part using base R. You should end up with two data frames (per country, and per city) with the exact same structure as in the last part, and display the top 10 rows of each, ordered by increasing time. Hint: there are various routes to go; one strategy is to use `split()`, followed by `lapply()` with a custom function call, and then `rbind()` to get things in a data frame form. Note: your code here will probably be more complicated, or at least less intuitive, than your code in the last part.
+
+- **1f.** With the most minor modification to your code possible, do the same computations as in Q1d, but now when there are ties, pick only one of the relevant results arbitrarily (e.g., uniformly at random is fine).
+
+Practice spreading and gathering
+===
+
+In the following, use pipes and `dplyr` or `tidyr` verbs to solve each part as cleanly/succintly as you can. In some parts, it might make more sense to use direct indexing, and that's perfectly fine.
+
+- **2a.** From `sprint.m.df`, define a reduced data frame `dat.reduced` as follows. For each athlete, and each city, compute the median of all times they recorded in this city. Your new data frame `dat.reduced` should have 1787 rows and 3 columns (Name, City, Time). Confirm that it has these dimensions, and display its first 10 entries. 
+
+- **2b.** The data frame `dat.reduced` is said to be in "long" format: it has observations on the rows, and variables (Name, City, Time) on the columns. Use `spread()` to convert this into "wide" format, and call the result `dat.wide`. Here the first column should be the athlete names, and the remaining columns should correspond to the cities. Apart from the first column, each entry gives the median time recorded by the athlete in this city. What are the dimensions of `dat.wide`, and do these make sense to you? 
+
+- **2c.** Not counting the names in the first column, how many non-`NA` values does `dat.wide` have? Does this make sense to you? It should. Reason how could you have guessed this number ahead of time, without even calling `spread()`, based only on `dat.reduced`?
+
+- **2d.** From `dat.wide`, look at the row for "Usain Bolt", and determine the city names that do not have `NA` values. These should be the cities in which he raced. Determine these cities directly from `dat.reduced`, and confirm that they match.
+
+- **2e.** Use `gather()` to convert `dat.wide` back into "long" format, and call the result `dat.long`. Remove rows that have `NA` values (hint: you can do this by setting `na.rm=TRUE` in the call to `gather()`), and order the rows alphabetically by athlete name. Once you've done this, `dat.wide` should have matching entries to `dat.reduced`; confirm that this is the case.
+
+Practice with joins
+===
+
+Below we read in a data frame `sprint.w.df` containing the top women's times in the 100m sprint, as seen in previous labs. In the following, use pipes and `dplyr` verbs to solve each part as cleanly/succintly as you can. Note: you'll receive warnings when you make joins about the conversion of factors to characters, and that's fine, don't worry about it.
+
+```{r}
+sprint.w.df = read.table(
+  file="http://www.stat.cmu.edu/~ryantibs/statcomp/data/sprint.w.dat",
+  sep="\t", header=TRUE, quote="", stringsAsFactors=TRUE)
+```
+
+- **3a.** As in Q1f, compute for each country, the triplet (Name, Country, Time) corresponding to the male athlete with the fastest time among athletes from that country, and breaking ties arbitrarily. Instead of displaying the results, save the resulting data frame as `dat.m`. Importantly, at the end of your flow of pipe commands used to define `dat.m`, make sure to call `ungroup()`. This will assure that `dat.m` has no groupings associated with it. Do the same for the women, and call the result `dat.w`. Report the dimensions of `dat.m` and `dat.w`, and check that they make sense to you.
+
+- **3b.** Perform an inner join, using `inner_join()`, of `dat.m` and `dat.w`, with the join done by the Country column. Call the resulting data frame `dat.ij`, and display its first 10 rows. How many rows does it have in total? Show how could you have arrived at this number ahead of time, from `dat.m$Country` and `dat.w$Country` (hint: `intersect()`). Count the number of `NA` values in `dat.ij`: this should be zero.
+
+- **3c.** Perform a left join, using `left_join()`, of `dat.m` and `dat.w`, with the join again done by the Country column. Call the resulting data frame `dat.lj`, and display its first 10 rows. How many rows does it have in total? Explain why this makes sense. Count the number of `NA` values in `dat.lj`: this should be 50. Show how you could have arrived at this number from `dat.m$Country` and `dat.w$Country` (hint: `setdiff()`).
+
+- **3d.** Finally, perform an full join, using `full_join()`, of `dat.m` and `dat.w`, with the join again done by the Country column. Call the resulting data frame `dat.fj`. How many rows does it have in total? Show how you could have arrived at this number from `dat.m$Country` and `dat.w$Country` (hint: `union()`). Count the number of `NA` values in `dat.fj`: this should be 80. **Challenge**: show how you could have arrived at this number from `dat.m$Country` and `dat.w$Country`. 
+
+More grouping and joining
+===
+
+Below is some solution code from Lab 8, where we convert the Birthdate and Date columns in the `sprint.m.df` and `sprint.w.df` data frames to numeric form. In what follows, you will resolve some of the questions from Lab 8, but using pipes and `dplyr`, `tidyr`.
+
+```{r}
+date.to.numeric = function(val) {
+  val = as.character(val)
+  vec = strsplit(val, split  = "\\.")[[1]]
+  if (nchar(vec[3]) == 2) vec[3] = paste0("19", vec[3])
+  vec = as.numeric(vec)
+  vec[3]*10^4 + vec[2]*10^2 + vec[1]
+}
+
+sprint.m.df$Birthdate = sapply(sprint.m.df$Birthdate, date.to.numeric)
+sprint.m.df$Date = sapply(sprint.m.df$Date, date.to.numeric)
+sprint.w.df$Birthdate = sapply(sprint.w.df$Birthdate, date.to.numeric)
+sprint.w.df$Date = sapply(sprint.w.df$Date, date.to.numeric)
+
+head(sprint.m.df, 5)
+head(sprint.w.df, 5)
+```
+
+- **4a.** Here you'll effectively resolve Q2c and Q2d from Lab 8, using one single flow of pipe commands, for each of the `sprint.m.df` and `sprint.w.df` data frames. In particular, define a new column CityDate given by concatenating the City and Date columns separated by a "." (hint: `unite()`), then keep only the row with the fastest time for each value of CityDate (breaking ties arbitrarily), then sort the rows by increasing Time Call the resulting data frames `dat.m.cd` and `dat.w.cd`. Make sure in the last line of pipe commands use to define them, you call `ungroup()`. Check that these data frames have dimensions 1253 x 7 and 921 x 7, respectively, and display the first 5 rows of each.
+
+- **4b.** Now you'll effectively resolve Q3 on Lab 8, using one single flow of pipe commands, for each of the `sprint.m.df` and `sprint.w.df` data frames. In particular, do an inner join between `dat.m.cd` and `dat.w.cd` by CityDate, then drop the Rank.x, Rank.y, Birthdate.x, Birthdate.y columns. Call the resulting data frame `dat.cd` and check that its dimensions are 377 x 9. Display its first 10 rows, and check that it has no `NA` values.
+
+- **4c.** Reproduce the plot you made in Q3d on Lab 8, of Time.y (women's time) versus Time.x (men's time), from the `dat.cd` data frame. As a reminder, a positive correlation here would indicate some kind of "track meet effect". Call `cor.test()` on Time.x and Time.y and report the p-value. This should all look exactly the same as in Q3d from Lab 8, it's just a check of reproducibility.
+
+- **Challenge.** In one single flow of pipe commands, for each of `sprint.m.df` and `sprint.w.df` (i.e., without saving an intermediate object `dat.cd`), reproduce the results in Q4b and Q4c. You don't have to worry about reporting the dimensions of the joined data frame or displaying its first 10 rows; just complete the inner join, produce the plot, and report the p-value from `cor.test()`. Hint: to produce the plot *before* you report the p-value from `cor.test()`, you're going to have to use the "tee" operator `%T>%` so that the pipe flow doesn't terminate prematurely. 

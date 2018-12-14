@@ -1,0 +1,173 @@
+---
+title: "Lab 10: Tidyverse I: Pipes and Dplyr"
+author: "Statistical Computing, 36-350"
+date: "Week of Monday October 29, 2018"
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, autodep=TRUE, cache.comments=TRUE)
+```
+
+Name:  
+Andrew ID:  
+Collaborated with:  
+
+This lab is to be done in class (completed outside of class if need be). You can collaborate with your classmates, but you must identify their names above, and you must submit **your own** lab as an knitted HTML file on Canvas, by Sunday 11:59pm, this week.
+
+**This week's agenda**: learning to master pipes and `dplyr`.
+
+```{r}
+# Load the tidyverse!
+library(tidyverse)
+```
+
+Pipes to base R
+===
+
+For each of the following code blocks, which are written with pipes, write equivalent code in base R (to do the same thing).
+
+- **1a.** 
+
+```{r}
+# Pipes:
+letters %>%
+  toupper %>%
+  paste(collapse="+") 
+
+# Base R:
+```
+
+- **1b.** 
+
+```{r}
+# Pipes:
+"     Ceci n'est pas une pipe     " %>% 
+  gsub("une", "un", .) %>%
+  trimws
+
+# Base R:
+```
+
+- **1c.**
+
+```{r}
+# Pipes:
+rnorm(1000) %>% 
+  hist(breaks=30, main="N(0,1) draws", col="pink", prob=TRUE) 
+
+# Base R:
+```
+
+- **1d.** 
+
+```{r}
+# Pipes:
+rnorm(1000) %>% 
+  hist(breaks=30, plot=FALSE) %>%
+  `[[`("density") %>%
+  max
+
+# Base R:
+```
+
+Base R to pipes
+===
+
+For each of the following code blocks, which are written in base R, write equivalent code with pipes (to do the same thing).
+
+- **2a.** Hint: you'll have to use the dot `.`, as seen above in Q1b, or in the lecture notes.
+
+```{r}
+# Base R:
+paste("Your grade is", sample(c("A","B","C","D","R"), size=1))
+
+# Pipes:
+```
+
+- **2b.** Hint: you can use the dot `.` again, in order to index `state.name` directly in the last pipe command.
+
+```{r}
+# Base R: 
+state.name[which.max(state.x77[,"Illiteracy"])] 
+
+# Pipes:
+```
+
+- **2c.** Hint: if `x` is a list of length 1, then `x[[1]]` is the same as `unlist(x)`.
+
+```{r}
+str.url = "http://www.stat.cmu.edu/~ryantibs/statcomp/data/trump.txt"
+
+# Base R:
+lines = readLines(str.url)
+text = paste(lines, collapse=" ")
+words = strsplit(text, split="[[:space:]]|[[:punct:]]")[[1]]
+wordtab = table(words)
+wordtab = sort(wordtab, decreasing=TRUE)
+head(wordtab, 10)
+
+# Pipes:
+```
+
+- **2d.** Hint: the only difference between this and the last part is the line `words = words[words != ""]`. This is a bit tricky line to do with pipes: use the dot `.`, once more, and manipulate it as if were a variable name.
+
+```{r}
+# Base R:
+lines = readLines(str.url)
+text = paste(lines, collapse=" ")
+words = strsplit(text, split="[[:space:]]|[[:punct:]]")[[1]]
+words = words[words != ""]
+wordtab = table(words)
+wordtab = sort(wordtab, decreasing=TRUE)
+head(wordtab, 10)
+
+# Pipes:
+```
+
+Sprints data, revisited
+===
+
+Below we read in a data frame `sprint.w.df` containing the top women's times in the 100m sprint, as seen in previous labs. We also define a function `factor.to.numeric()` that was used in Lab 8, to convert the Wind column to numeric values. In what follows, use `dplyr` and pipes to answer the following questions on `sprint.w.df`.
+
+```{r}
+sprint.w.df = read.table(
+  file="http://www.stat.cmu.edu/~ryantibs/statcomp/data/sprint.w.dat",
+  sep="\t", header=TRUE, quote="", stringsAsFactors=TRUE)
+
+factor.to.numeric = Vectorize(function(x) {
+  x = strsplit(as.character(x), split = ",")[[1]]
+  ifelse(length(x) > 1, 
+         as.numeric(paste(x, collapse=".")), 
+         as.numeric(x))
+})
+```
+
+- **3a.** Convert the Wind column to numeric using `factor.to.numeric()`. Hint: use `mutate_at()`, and reassign `sprint.w.df` to be the output.
+
+- **3b.** Run a linear regression of the Time on Wind columns, but only using data where Wind values that are nonpositive, and report the coefficients. Hint: use `filter()`, and use the dot `.` to pipe into the `lm()` function appropriately.
+
+- **3c.** Plot the Time versus Wind columns, but only using data where Wind values that are nonpositive, and label the axes appropriately. Hint: recall that for a data frame, with columns `colX` and `colY`, you can use `plot(colY ~ colX, data=df)`, to plot `df$colY` versus `df$colX`.
+
+- **Challenge.** Extend your code in the last part, still just using a single flow of pipe commands in total, to produce a plot but with the regression line on top. Hint: use the "tee" operator `%T>%` so that the pipe doesn't terminate after the call to `plot()`; we didn't learn this in lecture, so you can look it up to read more about it.
+
+- **3d.** Reorder the rows in terms of increasing Wind, and then display only the women who ran at most 10.7 seconds. Hint: do this with one single flow of pipe commands; use `arrange()`, `filter()`.
+
+- **3e.** Now reorder the rows in terms of increasing Time, and *then* increasing Wind, and again display only the women who ran at most 10.7 seconds, but only display the Time, Wind, Name, and Date columns. Hint: a single flow of pipe commands will do; note that `arrange()` can take multiple columns that you want to sort by, and the order you pass them specifies the priority.
+
+Prostate cancer data, revisited
+===
+
+Below we read in a data frame `pros.df` containing measurements on men with prostate cancer, as seen in previous labs. As before, in what follows, use `dplyr` and pipes to answer the following questions on `pros.df`.
+
+```{r}
+pros.df = 
+  read.table("http://www.stat.cmu.edu/~ryantibs/statcomp/data/pros.dat")
+```
+
+- **4a.** Among the men whose lcp value is equal to the minimum value, report the lowest and highest lpsa score.
+
+- **4b.** Order the rows by decreasing age, then decreasing lpsa score, and display the rows from men who are older than 70, but only the age, lpsa, lcavol, and lweight columns.
+
+- **4c.** Run a linear regression of the lpsa on lcavol and lweight columns, but only using men whose lcp value is strictly larger than the minimum value, and report a summary of the fitted model.
+
+- **4d.** Extend your code in the last part, still just using a single flow of pipe commands in total, to extract the p-values associated with each of the coefficients in the fitted model.

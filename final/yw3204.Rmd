@@ -1,0 +1,353 @@
+---
+title: "GR5206 Final Exam"
+author: "Yuhao Wang and yw3204"
+date: "Dec. 14, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+The STAT GR5206 Fall 2018 Final is open notes, open book(s), open computer and online resources are allowed. Students are **not** allowed to communicate with any other people regarding the exam. This includes emailing fellow students, using WeChat and other similar forms of communication. 
+
+Before the exam, the students should **turn off** their cellphones and pass them to the left side of each row. At the same time, please **close** the mailbox and **log out** WeChat and all the other apps for messaging and chatting. 
+
+If there is any suspicion of one or more students cheating, further investigation will take place. If students do not follow the guidelines, they will receive a zero on the exam and potentially face more severe consequences. 
+
+The exam will be posted on Canvas at 1:10PM and 1:20PM for group 1 and group 2 respectively. Group 1 and group 2 students are required to submit both the .pdf and .Rmd files on GradeScope or Canvas (or .html if you must) by 3:10PM and 3:20PM respectively. Late exams will not be accepted.
+
+If you have trouble submitting your final, please send the .pdf and .Rmd file to our course mailing list: `gr5206_course_staff@columbia.edu`.
+
+# Part 1: Simulation [16 pts]
+
+In this section, we consider a Dirichlet distribution, which is a multivariate generalization of the beta distribution. Here we assume that the $K$-dimensional random variable $X = (X_1, \ldots, X_K)$ satisfying $0<X_i<1$ for $1 \leq i \leq K$ and $\sum_{i=1}^K X_i =1$  is governed by the probability density $f (\mathbf{u})$, where $\mathbf{u} =(u_1, \ldots, u_K)^\top$. $f$ is defined by
+\begin{eqnarray*}
+ f (\mathbf{u}) &=& f (\mathbf{u}; \mathbf{\alpha}) \\
+ &=& 
+\frac{1}
+{B (\mathbf{\alpha})}
+\prod_{i=1}^K u_i^{\alpha_i -1}, 
+\end{eqnarray*}
+where $0<u_1, \ldots, u_K<1$ and $\sum_{i=1}^K u_i=1$, $\mathbf{\alpha} = (\alpha_1, \ldots, \alpha_K)^\top$ is a vector of parameters satisfying $\alpha_i >0$ for $1 \leq i \leq K$, and $B(\mathbf{\alpha}) = (\prod_{i=1}^K \Gamma( \alpha_i) )/\Gamma(\sum_{i=1}^K \alpha_i)$. Note that $\Gamma(\cdot)$ is the gamma function, and in `R` we can use the build-in function `gamma()` to calculate the value.
+
+In this part, we assume $K=3$, and $\alpha_1 = \alpha_2= \alpha_3 =2$. This distribution is essentially a bivariate one, as $X_3 = 1 - X_1 - X_2$. Therefore, drawing samples from this Dirichlet distribution is equivalent to drawing samples of $(X_1, X_2)$.
+
+The heatmap of the density (joint density of $(X_1, X_2)$) is shown below.
+```{r}
+### DO NOT run this chunk of code during the exam
+library(MCMCpack)
+alpha<-rep(2, 3)
+X<-rdirichlet(1e5, alpha)
+colnames(X)<- c("x1", "x2", "x3") 
+X <- data.frame(X)
+
+library(ggplot2)
+ggplot(X, aes(x=x1, y=x2) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    legend.position='none'
+  )
+```
+
+## Perform the following tasks:
+1) [12 pts] Use the **accept-reject** algorithm to simulate from this bivariate distribution of $(X_1, X_2)$ through the following three steps:
+\begin{itemize}
+\item[1.i] Clearly identify an \textbf{easy to simulate} distribution $g(\mathbf{x})$, where $\textbf{x} = (x_1, x_2)^\top$.
+\item[1.ii] Identify a \textbf{suitable} value of $\gamma$ such that your envelope function $e(\mathbf{x})$ satisfies
+\[
+f(\mathbf{x}) \leq e(\mathbf{x}) = g(\mathbf{x})/\gamma, \ \ \text{where} \ \ 0<\gamma<1,
+\]
+where $\textbf{x} = (x_1, x_2)^\top$. Note that you need choose $\gamma$ so that $e(\mathbf{x})$ is close to $f(\mathbf{x})$. Hint: if you have difficulty finding such a $\gamma$, just try to use a small value to ensure $f(\mathbf{x}) \leq e(\mathbf{x})$ for partial credit.
+\item[1.iii] Simulate 10,000 draws from the bivariate normal distribution using the \textbf{accept-reject} algorithm.  Display the first 20 simulated values.  Also, using \textbf{ggplot}, construct a scatter plot of the samples. Compare it to the heatmap.
+\end{itemize}
+
+1.i) [2 pts]  
+
+```{r}
+# Solution goes here 
+g <- function(x) {
+  return(dunif(x[1], 0, 1) * dunif(x[2], 0, 1))
+}
+```
+
+1.ii) [4 pts] 
+
+```{r}
+# Solution goes here 
+f <- function(x) {
+  return(ddirichlet(c(x, 1-x[1]-x[2]), alpha))
+}
+
+# determine gamma
+# nf <- function(x) {
+#   return(-ddirichlet(c(x, 1-x[1]-x[2]), alpha))
+# }
+# nlm(f, c(0.1, 0.2))
+
+e <- function(x, ga = 1/4.5) {
+  return(g(x)/ga)
+}
+```
+We choose $\gamma$ as 1/4.5 since the maximum of f(x) is 4.44.
+
+
+1.iii) [6 pts] The **Accept-Reject** algorithm is coded below: 
+
+```{r}
+# Solution goes here 
+k <- 0
+bi <- matrix(nrow = 10000, ncol = 2)
+while(k < 10000) {
+  x <- runif(2, 0, 1)
+  if(x[1] + x[2] < 1) {
+    u <- runif(1, 0, 1)
+    if(u * e(x) < f(x)) {
+      k <- k + 1
+      bi[k, ] <- x
+    }
+  }
+}
+```
+
+Plot: 
+
+```{r}
+# Solution goes here 
+df_bi <- as.data.frame(bi)
+names(df_bi) <- c("x1", "x2")
+
+ggplot(df_bi, aes(x=x1, y=x2) ) +
+  stat_density_2d(aes(fill = ..density..), geom = "raster", contour = FALSE) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    legend.position='none'
+  )
+```
+
+2) [4 pts] Slightly change the **Accept-Reject** algorithm from Part (1.iii) to also include the acceptance rate, i.e., how many times did the algorithm accept a draw compared to the total number of trials performed.  What proportion of cases were accepted? What is the theoretical value of the acceptance rate?
+
+```{r}
+# Solution goes here 
+k <- 0
+all <- 0
+bi <- matrix(nrow = 10000, ncol = 2)
+while(k < 10000) {
+  x <- runif(2, 0, 1)
+  if(x[1] + x[2] < 1) {
+    u <- runif(1, 0, 1)
+    if(u * e(x) < f(x)) {
+      k <- k + 1
+      bi[k, ] <- x
+    }
+  }
+  all <- all+1
+}
+
+# acceptance rate
+k/all
+```
+The total time is about 44000 and the acceptance time is 10000. The rate is about 0.22 while the theretical one should be around 1/4.5. They are quite close.
+
+# Part 2: Penalized logistic regression [12 pts + 4 extra pts]
+We look at the voting records of the US Congress of 2017. The votes were compiled from [http://clerk.house.gov](http://clerk.house.gov).
+
+We have the votes (or absence of a vote) for each member of the House of Representatives on over 709 roll call votes in 2017 with 424 members having all votes. Voting results are summarized in `2017_cleaned_votes.csv`. We want to use them to predict whether a member is Republican or Democrat. We consider a $L_2$-penalized model, and use the first 100 votes as predictors in order to save computational time.
+
+```{r}
+votes <- read.table("2017_cleaned_votes.csv", header = TRUE, sep = ";")
+dim(votes)
+X <- votes[, 2:101]
+```
+
+In the data set, the first column is the party of each member, and the other columns are voting results over 709 roll calls (roll call 2 result is missing). "1" represents "Yes", "-1" represents "No", and "0" means "Not Voting".
+
+3) [2 pts] Create a new binary variable `y`, which takes value 1 if the party is Republican ("R" in the data), and 0 if it is "Democrat" ("D").
+
+```{r}
+# Solution goes here 
+y <- ifelse(votes$party == "R", 1, 0)
+```
+
+Insteading of minimizing negative log-likehood, we minimize the penalized objective function for this problem
+\begin{eqnarray}
+\label{eq:l2}
+  l ( \beta_0, \beta) = 
+  -\frac{1}{n} \sum_{i=1}^n 
+  \left( y_i (\beta_0 + \sum_{j=1}^p \beta_j x_{ij} )
+  - \log ( 1 + \exp (\beta_0 + \sum_{j=1}^p \beta_j x_{ij} ) )
+   \right) 
+   + \lambda^* \sum_{j=1}^p \beta_j^2,
+\end{eqnarray}
+where $\beta = (\beta_1, \ldots, \beta_p)^\top$ is a vector. $x_{ij}$ is the voting result of the $i$th member for $j$th roll call. 
+
+4) [4 pts] Write a function `neg.ll.l2`. The function should take $\beta_0$ (a scalar), $\beta$ (a vector of lenght 100) and $\lambda$ (a scalar) as inputs, and return the value of $l ( \beta_0, \beta)$ with $\lambda^* = \lambda$. In your function, you can combine $\beta_0$ and $\beta$ together as a single argument, which is a vector of 101 parameters.
+
+```{r}
+# Solution goes here 
+neg.ll.l2 <- function(beta, lamd) {
+  beta_0 <- beta[1]
+  beta_1 <- beta[2:101]
+  Y <- y
+  X.mat <- as.matrix(X)
+  linear.component <- beta_0 + X.mat%*%beta_1
+  p.i <- exp(linear.component)/(1+exp(linear.component))
+  pl <- lamd * sum(beta_1 ** 2)
+  return(-mean(dbinom(Y, size=1, prob=p.i,log=TRUE)) + pl)
+}
+```
+
+5) [2 pts] Minimize $l$ with $\lambda^* =0.12$. You can use any base `R` function for optimization, such as `nlm()`. What are the corresponding values of $\beta_0$ and $\beta$ at the minimum?
+
+```{r}
+# Solution goes here 
+nlm(neg.ll.l2, rep(0, 101), lamd = 0.12)
+beta <- nlm(neg.ll.l2, rep(0, 101), lamd = 0.12)$estimate
+beta
+```
+The estimate of $bets_0$ and $bets$ are given above.
+
+5) [4 pts] Based on the fitted model (\ref{eq:l2}), for each member what is your prediction of her/his party. For how many members, you can make the correct prediction?
+```{r}
+# Solution goes here 
+y_tmp <- as.matrix(cbind(rep(1, 424), X)) %*% beta
+y_hat <- ifelse(y_tmp>0, 1, 0)
+mean(y == y_hat)
+```
+The correct prediction is 100%.
+
+6) [4 extra pts] Use cross-validation to estimate test error (under 0-1 loss) of the model (\ref{eq:l2}) with $\lambda^* = 4$.
+
+```{r}
+# Solution goes here 
+# cross validation
+neg.ll.l2.df <- function(beta, lamd, y = y, X = X) {
+  beta_0 <- beta[1]
+  beta_1 <- beta[2:101]
+  Y <- y
+  X.mat <- as.matrix(X)
+  linear.component <- beta_0 + X.mat%*%beta_1
+  p.i <- exp(linear.component)/(1+exp(linear.component))
+  pl <- lamd * sum(beta_1 ** 2)
+  return(-mean(dbinom(Y, size=1, prob=p.i,log=TRUE)) + pl)
+}
+
+neg.ll.l2.df(y = y[1:100], X = X[1:100, ])
+
+rep.vec <- rep(1:106, 8)
+re.order <- sample(rep.vec, replace=F)
+
+test.error <- NULL
+for (k in 1:106) {
+    # Choose test and training data from kth fold
+    test  <- votes[re.order==k, ]
+    train <- votes[re.order!=k, ]
+
+    n.test <- nrow(test)
+    
+    beta <- nlm(neg.ll.l2.df(y = y[train], X = X[train, ]))$estimate
+    predictions <- rep(NA, n.test)
+
+    test.error[k] <- sum(predictions != test$Direction)/n.test
+}
+
+mean(test.error)
+```
+
+# Part 3: Bootstrap and robust estimation [12 pts + 4 extra pts] 
+
+## Problem statement: 
+
+Consider the following toy dataset relating response variable $Y$ with covariate $X$.  Note that this dataset is an extreme case of how traditional least squares regression fails to capture the trend of the the data in the presences of outlying observations. 
+
+```{r}
+data <- read.csv("Problem1.csv")
+plot(data$X,data$Y, pch=16, main="Linear Trend and Outlyers")
+```
+
+
+7) [4 pts] Fit a regular linear regression to the above dataset and plot the line of best fit in red.
+
+Also remove the three outlying points and fit the linear model on the remaining 27 cases. Plot this new line of best fit on the same graph as the first model.  Create a legend on the plot describing each line.  Note: remove the points corresponding to $Y=1.05,1.94,2.38$.   
+
+Comment on any interesting features from the graph and estimated models.  
+
+```{r}
+# Solution goes here 
+lm1 <- lm(Y~X, data)
+
+plot(data$X,data$Y, pch=16, main="Linear Trend and Outlyers")
+abline(lm1, col = "red")
+
+n_data <- data[data$Y != c(1.05, 1.94, 2.38), ]
+lm2 <- lm(Y~X, n_data)
+plot(data$X,data$Y, pch=16, main="Linear Trend and Outlyers")
+abline(lm1, col = 2)
+abline(lm2, col = "blue")
+```
+
+
+## Problem 8) set-up:  
+
+To fit the linear model, we minimize the total squared Euclidean distance between $Y$ and a linear function of $X$, i.e., minimize the expression below with respect to $\beta_0,\beta_1$.  
+\[
+S(\beta_0,\beta_1)=\sum_{i=1}^n(Y_i-(\beta_0+\beta_1X_i))^2
+\]
+
+From the above fit, we see that the outlying $Y$ values are influencing the estimated line, consequently, the linear fit is being pulled down and is not covering the full trend of the data.  To remedy this problem, we can perform a robust estimation procedure. More specifically, instead of minimizing squared Euclidean distance (squared loss), we can minimize Huber loss.  To estimate our robust model, we minimize $Q(\beta_0,\beta_1)$ with respect to $\beta_0,\beta_1$:  
+\begin{equation}\label{e:Huber}
+Q(\beta_0,\beta_1)=\sum_{i=1}^nf(Y_i-(\beta_0+\beta_1X_i)),
+\end{equation}
+where 
+\[
+f(u)=\begin{cases}u^2, \ \ \ \ \ \ \ \ \ \ \ \ \  -1\leq u \leq 1 \\ 2|u|-1, \ \ \ \ \ \  u<-1 \ \text{or} \ u>1 \end{cases}
+\]
+
+The goal of the next exercise is to write a robust estimation procedure for the coefficients $\beta_0,\beta_1$. In class we performed univariate gradient descent. On this exam, you can use the R base function **nlm()** to perform the optimization task. 
+
+8) [4 pts] Write a `R` function **Q** which computes the Huber loss as a function of the vector $c(\beta_0,\beta_1)$. Note that the Huber loss is defined in Equation (\ref{e:Huber}).  This exercise is having you create an objective function $Q(\beta_0,\beta_1)$ so that you can run an optimization procedure later on. Test your function at the point **c(0,0)**.  
+
+```{r}
+# Solution goes here
+Q <- function(b) {
+  lin <- data$Y - (b[1] + b[2] * data$X)
+  tmp <- ifelse(abs(lin) <= 1, lin**2, 2*abs(lin)-1)
+  return(sum(tmp))
+}
+
+Q(c(0, 0))
+```
+
+
+9) [4 pts] Optimize Huber loss $Q$ using the **nlm()** function.  Use the starting point **c(0,0)** and display your robust estimates. Use `ggplot()`, plot the estimated robust linear model and include the regular least squares regression line on the plot. Create a legend and label the plot appropriately.       
+
+```{r}
+# Solution goes here
+est <- nlm(Q, c(0, 0))$estimate
+
+ggplot() + geom_smooth(data = data, aes(x = X, y = Y, color = "regular"), method =  "lm", se = F) +
+  geom_point(data = data, aes(x = X, y = Y)) + 
+  geom_line(aes(x = seq(0, 10), y = est[1] + est[2] * seq(0, 10), color = "huber")) +
+  labs(color = "regression type")
+```
+
+
+10) [4 extra pts] As statisticians, we must also construct confidence intervals on our parameter estimates to gauge how precise these estimates actually are.  Recall the traditional parametric regression model:
+\[
+Y_i=\beta_0+\beta_1 X_i+\epsilon_i, \ \ \ i=1,2,\ldots,n, \ \ \ \epsilon_i \overset{iid}{\sim}N(0,\sigma^2)
+\]
+When using least squares estimation, the normal-error structure ($\epsilon_i \overset{iid}{\sim}N(0,\sigma^2)$) allows us to construct parametric confidence intervals for the parameters $\beta_0,\beta_1$. This is easily done in **R**.  The code below constructs $95\%$ intervals for the coefficients. 
+```{r}
+round(confint(lm(Y~X,data=data),level=.95),4)
+```
+Notice from the above output, the slope is almost not within the range of what we expect.  Clearly the outliers are impacting our least squares estimators. 
+In the presence of our outlying observations, the normal error structure is clearly not correct.  To approximate the correct distribution, we will apply the bootstrap procedure on the robust estimated coefficients computed by minimizing $Q(\beta_0,\beta_1)$.
+
+Run a bootstrap on the robust estimation procedure.  Note that this is similar to the regression bootstrap but you will be estimating the parameters by minimizing $Q(\beta_0,\beta_1)$.  Use $B=1000$ bootstrap iterations and confidence level 95\%. Use the regular bootstrap intervals (not percentile intervals) and compare your bootstrapped solution to the parametric model.     
+
+```{r}
+# Solution goes here 
+```
+
+

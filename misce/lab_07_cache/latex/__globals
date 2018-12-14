@@ -1,0 +1,2 @@
+unnamed-chunk-2	plot.cum.means	samples	rfun	n.max	plot	cumsum
+unnamed-chunk-3	plot.ecdf	grid.min	min	sapply	samples	grid.max	max	grid	seq	evals	lapply	ecdfs	f	n.sizes	length	sizes	cols	rainbow	i	lines	legend
